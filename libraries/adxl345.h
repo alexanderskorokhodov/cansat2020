@@ -107,7 +107,7 @@
  *
  * A setting of 1 in the asleep bit indicates that the part is asleep, and a 
  * setting of 0 indicates that the part is not asleep. See the Register 
- * 0x2D—POWER_CTL (Read/Write) section for more information on autosleep mode.
+ * 0x2Dâ€”POWER_CTL (Read/Write) section for more information on autosleep mode.
  */
 #define ADXL_ACT_TAP_STATUS_ACT_X 0b01000000
 #define ADXL_ACT_TAP_STATUS_ACT_Y 0b00100000
@@ -280,7 +280,7 @@
  *    
  * Any bits set to 0 in this register send their respective interrupts to the 
  * INT1 pin, whereas bits set to 1 send their respective interrupts to the INT2 
- * pin. All selected interrupts for a given pin are OR’ed.
+ * pin. All selected interrupts for a given pin are ORâ€™ed.
  */
 #define ADXL_INT_MAP_DATA_INT1  0b00000000
 #define ADXL_INT_MAP_DATA_INT2  0b10000000
@@ -334,7 +334,7 @@
  * SELF_TEST  | SPI | INT_INVERT |  0 | FULL_RES | Justify |  Range
  *
  * The DATA_FORMAT register controls the presentation of data to Register 0x32 
- * through Register 0x37. All data, except that for the ±16 g range, must be 
+ * through Register 0x37. All data, except that for the Â±16 g range, must be 
  * clipped to avoid rollover.
  *
  * SELF_TEST Bit
@@ -372,10 +372,10 @@
  *
  * Setting
  * D1 | D0 | g Range
- * 0  | 0  | ±2 g
- * 0  | 1  | ±4 g
- * 1  | 0  | ±8 g
- * 1  | 1  | ±16 g
+ * 0  | 0  | Â±2 g
+ * 0  | 1  | Â±4 g
+ * 1  | 0  | Â±8 g
+ * 1  | 1  | Â±16 g
  */
 #define ADXL_DATA_FORMAT_SELFTEST 0b10000000
 #define ADXL_DATA_FORMAT_SPI      0b01000000
