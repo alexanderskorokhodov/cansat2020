@@ -1,0 +1,168 @@
+#include <avr/io.h>
+#include <stdio.h>
+#include <math.h>
+#include <st>
+
+//#include <ds18b20.h>
+//#include <AM2320.h>
+//#include <ccs811.h>
+//#include <adxl345.h>
+//#include <bmp280.h>
+
+AM2320 sensor;
+
+float altitude;
+float temp;
+float x_acc;
+float y_acc;
+float z_acc;
+float Acceleration;
+float pressure;
+
+int HEX;
+
+/*
+string fname = "f000.txt";
+*/
+
+int main(void)
+{
+	while (1)
+	{
+		setup(void);
+		/*temperature();*/
+		/*printf(temp);*/
+		alt(void);
+		AM(void);
+		CCS(void);
+		adxl(void);
+	}
+	return 1;
+}
+
+/*
+void temperature()
+{
+	//Start conversion (without ROM matching)
+	ds18b20convert( &PORTB, &DDRB, &PINB, ( 1 << 0 ), NULL );
+	//Delay (sensor needs time to perform conversion)
+	_delay_ms( 1000 );
+	//Read temperature (without ROM matching)
+	ds18b20read( &PORTB, &DDRB, &PINB, ( 1 << 0 ), NULL, &temp );
+	//Somehow use data stored in `temp` variable
+}
+*/
+
+void setup(void)
+{
+	// call sensor.begin() to initialize the library
+	sensor.begin();
+	printf("setup: Starting CCS8112");
+	printf("setup: ccs811 lib  version: ");
+	printf(CCS811_VERSION);
+	// Enable I2C
+	Wire.begin();
+	// Enable CCS811
+	CCS811.set_i2cdelay(50); // Needed for ESP8266 because it doesn't handle I2C clock stretch correctly
+	bool ok= CCS811.begin();
+	if( !ok ) printf("setup: CCS811 begin FAILED");
+	// Start measuring
+	ok= CCS811.start(CCS811_MODE_1SEC);
+	if( !ok ) printf("setup: CCS811 start FAILED");
+}
+
+void AM(void)
+{
+	// sensor.measure() returns boolean value
+	// - true indicates measurement is completed and success
+	// - false indicates that either sensor is not ready or crc validation failed
+	//   use getErrorCode() to check for cause of error.
+	if (sensor.measure())
+	{
+		printf("Temperature: ");
+		printf(sensor.getTemperature());
+		printf("Humidity: ");
+		printf(sensor.getHumidity());
+	}
+	else
+	{  // error has occurred
+		int errorCode = sensor.getErrorCode();
+		switch (errorCode)
+		{
+			case 1: printf("ERR: Sensor is off line"); break;
+			case 2: printf("ERR: CRC validation failed."); break;
+		}
+	}
+}
+
+void CCS(void)
+{
+	// Read
+	uint16_t eco2, etvoc, errstat, raw;
+	CCS811.read(&eco2,&etvoc,&errstat,&raw);
+	
+	// Print measurement results based on status
+	if( errstat==CCS811_ERRSTAT_OK )
+	{
+		printf("CCS811: ");
+		printf("eco2=");  printf(eco2);     printf(" ppm  ");
+		printf("etvoc="); printf(etvoc);    printf(" ppb  ");
+		//Serial.print("raw6=");  Serial.print(raw/1024); Serial.print(" uA  ");
+		//Serial.print("raw10="); Serial.print(raw%1024); Serial.print(" ADC  ");
+		//Serial.print("R="); Serial.print((1650*1000L/1023)*(raw%1024)/(raw/1024)); Serial.print(" ohm");
+		printf();
+	}
+	else if( errstat==CCS811_ERRSTAT_OK_NODATA )
+	{
+		printf("CCS811: waiting for (new) data");
+	}
+	else if( errstat & CCS811_ERRSTAT_I2CFAIL )
+	{
+		printf("CCS811: I2C error");
+	}
+	else
+	{
+		printf("CCS811: errstat="); printf(errstat, HEX);
+		printf("="); printf(CCS811.errstat_str(errstat) );
+	}
+	_delay_ms(1000);// Wait
+}
+
+void adxl(void)
+{
+	x_acc = adxl345_getXData()
+	y_acc = adxl345_getYData()
+	z_acc = adxl345_getZData()
+	Acceleration = sqrt(pow(x_acc, 2) + pow(y_acc, 2) + pow(z_acc, 2))
+	printf(Acceleration)
+}
+
+void alt(void)
+{
+	if (bmp280_get_status())
+	{
+	    altitude = bmp280_getaltitude()
+	    printf(altitude)
+	    pressure = bmp280_getpressure()
+	    printf(pressure)
+	}
+}
+
+/*
+bool setupSD()
+{
+	printf("Initializing SD card...");
+	if (CRC_ON_OFF == 0) 
+	{
+		Serial.println("SD initialization failed!");
+		return 0;
+	}
+	printf("SD initialization done.");
+	N = EEPROM.read(0);
+	EEPROM.write(0, N+1);
+	fname[3]=(N%10)+'0';
+	fname[2]=N/10%10+'0';
+	fname[1]=N/100+'0';
+	myFile = SD.open(fname, FILE_WRITE);
+	return 1;
+}*/
