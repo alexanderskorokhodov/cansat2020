@@ -1,13 +1,21 @@
-#include <avr/io.h>
-#include <stdio.h>
-#include <math.h>
-#include <st>
+#define F_CPU 8000000UL
 
-//#include <ds18b20.h>
-//#include <AM2320.h>
-//#include <ccs811.h>
-//#include <adxl345.h>
-//#include <bmp280.h>
+#define	buff_size 
+
+#include <avr/io.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include "diskio.h"
+#include "pff.h"
+#include "spi.h"
+#include <math.h>
+#include <string.h>
+
+#include <ds18b20.h>
+#include <AM2320.h>
+#include <ccs811.h>
+#include <adxl345.h>
+#include <bmp280.h>
 
 AM2320 sensor;
 
@@ -18,29 +26,55 @@ float y_acc;
 float z_acc;
 float Acceleration;
 float pressure;
+float Humidity;
+float Eco2;
+float Etvoc;
+
+bool Start;
+bool high;
+bool Landing;
 
 int HEX;
 
-/*
-string fname = "f000.txt";
-*/
+FATFS fs;
+BYTE read_buff[buff_size];
+BYTE write_buff[buff_size];
+UINT br; 
 
 int main(void)
-{
-	while (1)
+{   
+	Start = false
+	high = false
+	Landing = false
+	while(1):
 	{
 		setup(void);
-		/*temperature();*/
-		/*printf(temp);*/
+		temperature();
 		alt(void);
-		AM(void);
-		CCS(void);
-		adxl(void);
+        AM(void);
+	    CCS(void);
+	    adxl(void);
+		if (Acceleration > 28)
+			Start = true
+	    if (altitude > 500)
+	        high = true
+		if ((Acceleration < 11) & ((altitude < 15)) & (Start = true) & (high = true))
+	        Landing = true
+		if (pf_mount(&fs) == FR_OK )
+		{
+			if(pf_open("DATA.txt") == FR_OK)
+			{
+				pf_lseek(0);
+				write_buff[buff_size] = (Acceleration, altitude, pressure, temp, Humidity, Eco2, Etvoc, Start, high, Landing)
+				pf_write(write_buff, buff_size, &br);
+				pf_write(0, 0, &br);
+			}
+		}
 	}
 	return 1;
 }
 
-/*
+
 void temperature()
 {
 	//Start conversion (without ROM matching)
@@ -51,7 +85,7 @@ void temperature()
 	ds18b20read( &PORTB, &DDRB, &PINB, ( 1 << 0 ), NULL, &temp );
 	//Somehow use data stored in `temp` variable
 }
-*/
+
 
 void setup(void)
 {
@@ -79,10 +113,9 @@ void AM(void)
 	//   use getErrorCode() to check for cause of error.
 	if (sensor.measure())
 	{
-		printf("Temperature: ");
-		printf(sensor.getTemperature());
-		printf("Humidity: ");
-		printf(sensor.getHumidity());
+		//printf("Temperature: ");
+		//printf(sensor.getTemperature());
+		Humidity = sensor.getHumidity()
 	}
 	else
 	{  // error has occurred
@@ -107,6 +140,8 @@ void CCS(void)
 		printf("CCS811: ");
 		printf("eco2=");  printf(eco2);     printf(" ppm  ");
 		printf("etvoc="); printf(etvoc);    printf(" ppb  ");
+		Eco2 = eco2;
+		Etvoc = etvoc;
 		//Serial.print("raw6=");  Serial.print(raw/1024); Serial.print(" uA  ");
 		//Serial.print("raw10="); Serial.print(raw%1024); Serial.print(" ADC  ");
 		//Serial.print("R="); Serial.print((1650*1000L/1023)*(raw%1024)/(raw/1024)); Serial.print(" ohm");
@@ -125,7 +160,6 @@ void CCS(void)
 		printf("CCS811: errstat="); printf(errstat, HEX);
 		printf("="); printf(CCS811.errstat_str(errstat) );
 	}
-	_delay_ms(1000);// Wait
 }
 
 void adxl(void)
@@ -147,22 +181,3 @@ void alt(void)
 	    printf(pressure)
 	}
 }
-
-/*
-bool setupSD()
-{
-	printf("Initializing SD card...");
-	if (CRC_ON_OFF == 0) 
-	{
-		Serial.println("SD initialization failed!");
-		return 0;
-	}
-	printf("SD initialization done.");
-	N = EEPROM.read(0);
-	EEPROM.write(0, N+1);
-	fname[3]=(N%10)+'0';
-	fname[2]=N/10%10+'0';
-	fname[1]=N/100+'0';
-	myFile = SD.open(fname, FILE_WRITE);
-	return 1;
-}*/
